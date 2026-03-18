@@ -86,8 +86,8 @@ app = FastAPI(title="Naino Academy API", version="2.0.0")
 # ─────────────────────────────────────────────
 import random, string
 
-def generate_code(length=12) -> str:
-    return "NA-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
+def generate_code() -> str:
+    return str(random.randint(100000, 999999))
 
 def get_remote_config(key: str, default=None):
     """Read a value from admin_settings/ Firebase node."""
