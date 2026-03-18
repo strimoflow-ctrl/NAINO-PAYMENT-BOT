@@ -491,6 +491,11 @@ async def _process_payment(u_id: str, days: int, plan: str, amount_paise: int):
     except Exception as e:
         logger.error(f"_process_payment error: {e}")
 
+        # Uptime Robot और हेल्थ चेक के लिए होम पेज
+@app.get("/")
+async def root():
+    return {"status": "running", "bot": "Naino Academy Bot is Online 🚀"}
+
 
 # --- Admin Dashboard ---
 @app.get("/admin", response_class=HTMLResponse)
