@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Naino Academy — Admin</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --bg:#080c10;--surface:#0f1419;--surface2:#161d26;--border:#1e2a38;
+    --accent:#00d4ff;--accent2:#7c3aed;--success:#10d070;--warn:#fbbf24;--danger:#ef4444;
+    --text:#e2e8f0;--muted:#64748b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif;min-height:100vh}
+  .mono{font-family:'JetBrains Mono',monospace}
+
+  /* Glowing border utility */
+  .glow{box-shadow:0 0 20px rgba(0,212,255,.15)}
+  .glow-sm{box-shadow:0 0 10px rgba(0,212,255,.10)}
+
+  /* Sidebar */
+  #sidebar{width:240px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);
+           display:flex;flex-direction:column;padding:1.5rem 1rem;position:fixed;top:0;left:0;z-index:40}
+  #sidebar .logo{font-size:1.1rem;font-weight:700;letter-spacing:.05em;color:var(--accent);
+                  padding:.75rem 1rem;border-radius:.5rem;background:rgba(0,212,255,.06);
+                  border:1px solid rgba(0,212,255,.15);margin-bottom:2rem;text-align:center}
+  .nav-item{display:flex;align-items:center;gap:.75rem;padding:.65rem 1rem;border-radius:.5rem;
+            cursor:pointer;transition:all .2s;color:var(--muted);font-size:.9rem;font-weight:500;
+            border:1px solid transparent;margin-bottom:.25rem}
+  .nav-item:hover{background:var(--surface2);color:var(--text);border-color:var(--border)}
+  .nav-item.active{background:rgba(0,212,255,.08);color:var(--accent);border-color:rgba(0,212,255,.2)}
+  .nav-item svg{width:18px;height:18px;flex-shrink:0}
+
+  /* Main */
+  #main{margin-left:240px;padding:2rem}
+
+  /* Cards */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:.875rem;padding:1.5rem;transition:border-color .2s}
+  .card:hover{border-color:rgba(0,212,255,.25)}
+  .stat-card{display:flex;flex-direction:column;gap:.5rem}
+  .stat-label{font-size:.75rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .stat-val{font-size:2rem;font-weight:700;line-height:1}
+  .stat-sub{font-size:.8rem;color:var(--muted)}
+
+  /* Tabs */
+  .tab-btn{padding:.5rem 1.25rem;border-radius:.5rem;font-size:.85rem;font-weight:600;cursor:pointer;
+           transition:all .2s;color:var(--muted);background:transparent;border:1px solid transparent}
+  .tab-btn.active{background:rgba(0,212,255,.1);color:var(--accent);border-color:rgba(0,212,255,.25)}
+  .tab-btn:hover:not(.active){color:var(--text);background:var(--surface2)}
+
+  /* Inputs */
+  .inp{background:var(--surface2);border:1px solid var(--border);border-radius:.5rem;padding:.65rem 1rem;
+       color:var(--text);font-size:.9rem;font-family:'Space Grotesk',sans-serif;width:100%;
+       outline:none;transition:border-color .2s}
+  .inp:focus{border-color:var(--accent)}
+  textarea.inp{resize:vertical;min-height:110px}
+
+  /* Buttons */
+  .btn{padding:.6rem 1.4rem;border-radius:.5rem;font-weight:600;font-size:.875rem;cursor:pointer;
+       transition:all .2s;border:none;display:inline-flex;align-items:center;gap:.5rem}
+  .btn-primary{background:var(--accent);color:#000}
+  .btn-primary:hover{opacity:.85;transform:translateY(-1px)}
+  .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+  .btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
+  .btn-danger{background:rgba(239,68,68,.15);color:var(--danger);border:1px solid rgba(239,68,68,.25)}
+  .btn-danger:hover{background:rgba(239,68,68,.25)}
+
+  /* Toast */
+  #toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:999;display:flex;flex-direction:column;gap:.5rem}
+  .toast-item{padding:.75rem 1.25rem;border-radius:.5rem;font-size:.85rem;font-weight:500;
+              animation:slideIn .3s ease;max-width:320px}
+  .toast-success{background:rgba(16,208,112,.15);border:1px solid rgba(16,208,112,.3);color:var(--success)}
+  .toast-error{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:var(--danger)}
+  @keyframes slideIn{from{transform:translateX(100px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+  /* Table */
+  .tbl{width:100%;border-collapse:collapse;font-size:.85rem}
+  .tbl th{text-align:left;padding:.6rem 1rem;color:var(--muted);font-size:.72rem;letter-spacing:.08em;
+          text-transform:uppercase;border-bottom:1px solid var(--border)}
+  .tbl td{padding:.7rem 1rem;border-bottom:1px solid rgba(30,42,56,.5)}
+  .tbl tr:last-child td{border-bottom:none}
+  .tbl tr:hover td{background:rgba(0,212,255,.03)}
+
+  /* Badge */
+  .badge{padding:.2rem .6rem;border-radius:9999px;font-size:.72rem;font-weight:700}
+  .badge-green{background:rgba(16,208,112,.15);color:var(--success)}
+  .badge-red{background:rgba(239,68,68,.15);color:var(--danger)}
+  .badge-yellow{background:rgba(251,191,36,.15);color:var(--warn)}
+
+  /* Pulse dot */
+  .pulse-dot{width:8px;height:8px;border-radius:50%;background:var(--success);
+             animation:pulse 2s infinite;display:inline-block;margin-right:6px}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+
+  /* Section pages */
+  .page{display:none}
+  .page.active{display:block}
+
+  /* Scrollbar */
+  ::-webkit-scrollbar{width:5px}
+  ::-webkit-scrollbar-track{background:var(--surface)}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  ::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+
+  /* Grid helpers */
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+  .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem}
+  @media(max-width:1200px){.grid-4{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:768px){#sidebar{display:none}#main{margin-left:0}.grid-4{grid-template-columns:1fr}.grid-2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="logo">🎓 Naino Admin</div>
+  <div class="nav-item active" onclick="goto('overview')">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Overview
+  </div>
+  <div class="nav-item" onclick="goto('analytics')">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    Analytics
+  </div>
+  <div class="nav-item" onclick="goto('broadcast')">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 012 1.22 2 2 0 014 .04h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+    Broadcast
+  </div>
+  <div class="nav-item" onclick="goto('config')">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 000 14.14M4.93 19.07a10 10 0 010-14.14"/><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    Remote Config
+  </div>
+  <div class="nav-item" onclick="goto('sales')">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6"/></svg>
+    Sales History
+  </div>
+  <div style="margin-top:auto;padding-top:1rem;border-top:1px solid var(--border)">
+    <div style="font-size:.72rem;color:var(--muted);padding:.5rem 1rem">
+      <span class="pulse-dot"></span>System Online
+    </div>
+    <div id="clockDisplay" style="font-size:.72rem;color:var(--muted);padding:.25rem 1rem" class="mono"></div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main id="main">
+
+  <!-- OVERVIEW PAGE -->
+  <div class="page active" id="page-overview">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem">
+      <div>
+        <h1 style="font-size:1.4rem;font-weight:700">Dashboard Overview</h1>
+        <p style="color:var(--muted);font-size:.85rem;margin-top:.2rem">Real-time stats from Firebase</p>
+      </div>
+      <button class="btn btn-secondary" onclick="loadStats()">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
+        Refresh
+      </button>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="grid-4" style="margin-bottom:1.5rem">
+      <div class="card stat-card glow-sm">
+        <div class="stat-label">💰 Total Revenue</div>
+        <div class="stat-val" id="s-revenue" style="color:var(--success)">—</div>
+        <div class="stat-sub">Lifetime earnings (₹)</div>
+      </div>
+      <div class="card stat-card glow-sm">
+        <div class="stat-label">👥 Active Users</div>
+        <div class="stat-val" id="s-active" style="color:var(--accent)">—</div>
+        <div class="stat-sub">Valid subscriptions</div>
+      </div>
+      <div class="card stat-card glow-sm">
+        <div class="stat-label">⚠️ Expiring Today</div>
+        <div class="stat-val" id="s-expiring" style="color:var(--warn)">—</div>
+        <div class="stat-sub">Need renewal today</div>
+      </div>
+      <div class="card stat-card glow-sm">
+        <div class="stat-label">🗂️ Total Codes</div>
+        <div class="stat-val" id="s-codes" style="color:var(--accent2)">—</div>
+        <div class="stat-sub">All access codes</div>
+      </div>
+    </div>
+
+    <!-- Mini revenue chart -->
+    <div class="card glow" style="margin-bottom:1.5rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+        <h2 style="font-size:1rem;font-weight:600">Revenue (Last 14 Days)</h2>
+        <button class="btn btn-secondary" style="font-size:.75rem;padding:.4rem .9rem" onclick="goto('analytics')">Full View →</button>
+      </div>
+      <canvas id="miniChart" height="70"></canvas>
+    </div>
+
+    <!-- Recent sales table -->
+    <div class="card">
+      <h2 style="font-size:1rem;font-weight:600;margin-bottom:1rem">Recent Transactions</h2>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr><th>Code</th><th>Plan</th><th>User ID</th><th>Date</th><th>Status</th></tr></thead>
+          <tbody id="recentSalesBody"><tr><td colspan="5" style="color:var(--muted);text-align:center;padding:2rem">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANALYTICS PAGE -->
+  <div class="page" id="page-analytics">
+    <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:.25rem">Analytics</h1>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:1.75rem">Revenue & subscription trends</p>
+
+    <div style="display:flex;gap:.5rem;margin-bottom:1.5rem">
+      <button class="tab-btn active" id="tab-daily" onclick="switchPeriod('daily')">Daily (30d)</button>
+      <button class="tab-btn" id="tab-monthly" onclick="switchPeriod('monthly')">Monthly (12m)</button>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:1.5rem">
+      <div class="card glow">
+        <h3 style="font-size:.9rem;font-weight:600;margin-bottom:1rem;color:var(--muted)">REVENUE (₹)</h3>
+        <canvas id="revenueChart" height="180"></canvas>
+      </div>
+      <div class="card glow">
+        <h3 style="font-size:.9rem;font-weight:600;margin-bottom:1rem;color:var(--muted)">TRANSACTIONS</h3>
+        <canvas id="countChart" height="180"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- BROADCAST PAGE -->
+  <div class="page" id="page-broadcast">
+    <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:.25rem">Broadcast Message</h1>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:1.75rem">Send announcements to all registered users</p>
+
+    <div class="grid-2">
+      <div class="card glow">
+        <h2 style="font-size:.95rem;font-weight:600;margin-bottom:1.25rem">Compose Message</h2>
+        <div style="display:flex;flex-direction:column;gap:1rem">
+          <div>
+            <label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:.4rem">Image URL (optional)</label>
+            <input class="inp" id="bc-image" type="url" placeholder="https://example.com/image.jpg"/>
+          </div>
+          <div>
+            <label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:.4rem">Message (Markdown supported)</label>
+            <textarea class="inp" id="bc-message" placeholder="*Bold* _italic_ `code`&#10;&#10;Write your announcement here…"></textarea>
+          </div>
+          <div style="display:flex;gap:.75rem">
+            <button class="btn btn-primary" onclick="sendBroadcast()">
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              Send Broadcast
+            </button>
+            <button class="btn btn-secondary" onclick="previewBroadcast()">Preview</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="bc-preview-card" style="min-height:200px">
+        <h2 style="font-size:.95rem;font-weight:600;margin-bottom:1.25rem">Live Preview</h2>
+        <div id="bc-preview" style="color:var(--muted);font-size:.85rem">
+          Preview will appear here…
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REMOTE CONFIG PAGE -->
+  <div class="page" id="page-config">
+    <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:.25rem">Remote Config</h1>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:1.75rem">Change prices & reminder messages without code deployment</p>
+
+    <div class="grid-2" style="margin-bottom:1.5rem">
+      <!-- Prices -->
+      <div class="card glow">
+        <h2 style="font-size:.95rem;font-weight:600;margin-bottom:1.25rem">💰 Plan Prices (₹)</h2>
+        <div style="display:flex;flex-direction:column;gap:.875rem">
+          <div>
+            <label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:.4rem">🥈 Silver (1 Month)</label>
+            <input class="inp" id="cfg-price-silver" type="number" placeholder="99"/>
+          </div>
+          <div>
+            <label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:.4rem">🥇 Gold (6 Months)</label>
+            <input class="inp" id="cfg-price-gold" type="number" placeholder="499"/>
+          </div>
+          <div>
+            <label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:.4rem">💎 Diamond (1 Year)</label>
+            <input class="inp" id="cfg-price-diamond" type="number" placeholder="799"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reminders -->
+      <div class="card glow">
+        <h2 style="font-size:.95rem;font-weight:600;margin-bottom:1.25rem">📣 Expiry Reminder Messages</h2>
+        <div style="display:flex;flex-direction:column;gap:.875rem">
+          <div>
+            <label style="font-size:.8rem;color:var(--warn);display:block;margin-bottom:.4rem">Day 3 — Warning</label>
+            <textarea class="inp" id="cfg-rem3" rows="2" placeholder="Your plan expires in 3 days…"></textarea>
+          </div>
+          <div>
+            <label style="font-size:.8rem;color:var(--warn);display:block;margin-bottom:.4rem">Day 2 — Urgent</label>
+            <textarea class="inp" id="cfg-rem2" rows="2" placeholder="Only 48 hours left…"></textarea>
+          </div>
+          <div>
+            <label style="font-size:.8rem;color:var(--danger);display:block;margin-bottom:.4rem">Day 1 — Final</label>
+            <textarea class="inp" id="cfg-rem1" rows="2" placeholder="LAST CHANCE…"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="saveConfig()">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Save All Config
+    </button>
+  </div>
+
+  <!-- SALES HISTORY PAGE -->
+  <div class="page" id="page-sales">
+    <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:.25rem">Sales History</h1>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:1.75rem">All recent transactions</p>
+    <div class="card">
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr><th>Code</th><th>Plan</th><th>User ID</th><th>Created</th><th>Status</th></tr></thead>
+          <tbody id="salesHistoryBody"><tr><td colspan="5" style="color:var(--muted);text-align:center;padding:2rem">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- TOAST CONTAINER -->
+<div id="toast"></div>
+
+<script>
+// ─── UTILS ───────────────────────────────────
+const PASS = new URLSearchParams(location.search).get('pass') || '';
+const API = (path) => `${path}?pass=${PASS}`;
+
+function toast(msg, type='success'){
+  const el = document.createElement('div');
+  el.className = `toast-item toast-${type}`;
+  el.textContent = msg;
+  document.getElementById('toast').appendChild(el);
+  setTimeout(()=>el.remove(), 3500);
+}
+
+function fmt_ts(ms){ return ms ? new Date(ms).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—'; }
+
+// Live clock
+setInterval(()=>{
+  document.getElementById('clockDisplay').textContent = new Date().toLocaleTimeString('en-IN',{hour12:true});
+},1000);
+
+// ─── NAVIGATION ──────────────────────────────
+function goto(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{ if(n.getAttribute('onclick')?.includes(page)) n.classList.add('active'); });
+  if(page==='overview') loadStats();
+  if(page==='analytics') loadAnalytics();
+  if(page==='config') loadConfig();
+  if(page==='sales') loadSalesHistory();
+}
+
+// ─── CHART HELPERS ───────────────────────────
+let miniChartInst, revChartInst, cntChartInst;
+
+function chartDefaults(){
+  return {
+    responsive:true, maintainAspectRatio:true,
+    plugins:{legend:{display:false},tooltip:{backgroundColor:'#0f1419',borderColor:'#1e2a38',borderWidth:1,titleColor:'#e2e8f0',bodyColor:'#64748b'}},
+    scales:{
+      x:{grid:{color:'rgba(30,42,56,.6)'},ticks:{color:'#64748b',font:{size:10}}},
+      y:{grid:{color:'rgba(30,42,56,.6)'},ticks:{color:'#64748b',font:{size:10}}}
+    }
+  };
+}
+
+// ─── OVERVIEW ────────────────────────────────
+async function loadStats(){
+  try{
+    const r = await fetch(API('/api/admin/stats'));
+    const d = await r.json();
+    document.getElementById('s-revenue').textContent  = '₹'+d.total_revenue.toLocaleString('en-IN');
+    document.getElementById('s-active').textContent   = d.active_users;
+    document.getElementById('s-expiring').textContent = d.expiring_today;
+    document.getElementById('s-codes').textContent    = d.total_codes;
+  } catch(e){ toast('Failed to load stats','error'); }
+
+  // Mini chart — last 14 days
+  try{
+    const r = await fetch(API('/api/admin/sales-graph?period=daily'));
+    const d = await r.json();
+    const labels   = d.labels.slice(-14);
+    const revenues = d.revenues.slice(-14);
+    const ctx = document.getElementById('miniChart').getContext('2d');
+    if(miniChartInst) miniChartInst.destroy();
+    miniChartInst = new Chart(ctx,{
+      type:'line',
+      data:{
+        labels,
+        datasets:[{
+          data:revenues,
+          borderColor:'#00d4ff', borderWidth:2, pointRadius:3, pointBackgroundColor:'#00d4ff',
+          fill:true, backgroundColor:'rgba(0,212,255,.06)', tension:.4
+        }]
+      },
+      options:{...chartDefaults(), aspectRatio:4}
+    });
+  } catch(e){}
+
+  // Recent sales
+  try{
+    const r  = await fetch(API('/api/admin/recent-sales'));
+    const ds = await r.json();
+    const tbody = document.getElementById('recentSalesBody');
+    if(!ds.length){ tbody.innerHTML='<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:1.5rem">No transactions yet</td></tr>'; return; }
+    tbody.innerHTML = ds.map(s=>`
+      <tr>
+        <td class="mono" style="font-size:.8rem;color:var(--accent)">${s.code}</td>
+        <td>${s.plan||'—'}</td>
+        <td class="mono" style="font-size:.8rem;color:var(--muted)">${s.user_id}</td>
+        <td>${fmt_ts(s.created_at)}</td>
+        <td><span class="badge ${s.status==='active'?'badge-green':'badge-red'}">${s.status||'—'}</span></td>
+      </tr>`).join('');
+  } catch(e){}
+}
+
+// ─── ANALYTICS ───────────────────────────────
+let currentPeriod = 'daily';
+
+async function loadAnalytics(period){
+  period = period || currentPeriod;
+  try{
+    const r = await fetch(API(`/api/admin/sales-graph?period=${period}`));
+    const d = await r.json();
+
+    const baseOpts = {...chartDefaults(), aspectRatio:1.8};
+
+    // Revenue chart
+    const ctx1 = document.getElementById('revenueChart').getContext('2d');
+    if(revChartInst) revChartInst.destroy();
+    revChartInst = new Chart(ctx1,{
+      type:'bar',
+      data:{
+        labels:d.labels,
+        datasets:[{
+          label:'Revenue ₹', data:d.revenues,
+          backgroundColor:'rgba(0,212,255,.25)', borderColor:'#00d4ff', borderWidth:1, borderRadius:4
+        }]
+      },
+      options:baseOpts
+    });
+
+    // Count chart
+    const ctx2 = document.getElementById('countChart').getContext('2d');
+    if(cntChartInst) cntChartInst.destroy();
+    cntChartInst = new Chart(ctx2,{
+      type:'bar',
+      data:{
+        labels:d.labels,
+        datasets:[{
+          label:'Transactions', data:d.counts,
+          backgroundColor:'rgba(124,58,237,.25)', borderColor:'#7c3aed', borderWidth:1, borderRadius:4
+        }]
+      },
+      options:baseOpts
+    });
+  } catch(e){ toast('Failed to load analytics','error'); }
+}
+
+function switchPeriod(p){
+  currentPeriod = p;
+  document.getElementById('tab-daily').classList.toggle('active', p==='daily');
+  document.getElementById('tab-monthly').classList.toggle('active', p==='monthly');
+  loadAnalytics(p);
+}
+
+// ─── BROADCAST ───────────────────────────────
+async function sendBroadcast(){
+  const msg = document.getElementById('bc-message').value.trim();
+  const img = document.getElementById('bc-image').value.trim();
+  if(!msg){ toast('Message is required','error'); return; }
+  try{
+    const r = await fetch(API('/api/admin/broadcast'),{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({message:msg, image_url:img})
+    });
+    if(r.ok){ toast('Broadcast queued successfully!'); document.getElementById('bc-message').value=''; }
+    else { toast('Broadcast failed','error'); }
+  } catch(e){ toast('Network error','error'); }
+}
+
+function previewBroadcast(){
+  const msg = document.getElementById('bc-message').value;
+  const img = document.getElementById('bc-image').value;
+  const el  = document.getElementById('bc-preview');
+  let html  = '';
+  if(img) html += `<img src="${img}" style="max-width:100%;border-radius:.5rem;margin-bottom:.75rem;border:1px solid var(--border)"/>`;
+  html += `<div style="white-space:pre-wrap;font-size:.875rem">${msg.replace(/\*(.+?)\*/g,'<strong>$1</strong>').replace(/_(.+?)_/g,'<em>$1</em>').replace(/\`(.+?)\`/g,'<code style="background:var(--surface2);padding:.1em .4em;border-radius:.25rem;font-family:monospace">$1</code>')}</div>`;
+  el.innerHTML = html;
+}
+
+// ─── CONFIG ──────────────────────────────────
+async function loadConfig(){
+  try{
+    const r = await fetch(API('/api/admin/config'));
+    const d = await r.json();
+    if(d.prices){
+      document.getElementById('cfg-price-silver').value  = d.prices.Silver  ? d.prices.Silver/100  : '';
+      document.getElementById('cfg-price-gold').value    = d.prices.Gold    ? d.prices.Gold/100    : '';
+      document.getElementById('cfg-price-diamond').value = d.prices.Diamond ? d.prices.Diamond/100 : '';
+    }
+    document.getElementById('cfg-rem3').value = d.reminder_day3||'';
+    document.getElementById('cfg-rem2').value = d.reminder_day2||'';
+    document.getElementById('cfg-rem1').value = d.reminder_day1||'';
+  } catch(e){ toast('Failed to load config','error'); }
+}
+
+async function saveConfig(){
+  const silver  = parseFloat(document.getElementById('cfg-price-silver').value)||0;
+  const gold    = parseFloat(document.getElementById('cfg-price-gold').value)||0;
+  const diamond = parseFloat(document.getElementById('cfg-price-diamond').value)||0;
+  const body = {
+    prices:{
+      Silver:  Math.round(silver*100),
+      Gold:    Math.round(gold*100),
+      Diamond: Math.round(diamond*100),
+    },
+    reminder_day3: document.getElementById('cfg-rem3').value,
+    reminder_day2: document.getElementById('cfg-rem2').value,
+    reminder_day1: document.getElementById('cfg-rem1').value,
+  };
+  try{
+    const r = await fetch(API('/api/admin/config'),{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    if(r.ok) toast('Config saved!');
+    else toast('Save failed','error');
+  } catch(e){ toast('Network error','error'); }
+}
+
+// ─── SALES HISTORY ───────────────────────────
+async function loadSalesHistory(){
+  try{
+    const r  = await fetch(API('/api/admin/recent-sales'));
+    const ds = await r.json();
+    const tbody = document.getElementById('salesHistoryBody');
+    if(!ds.length){ tbody.innerHTML='<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:1.5rem">No transactions yet</td></tr>'; return; }
+    tbody.innerHTML = ds.map(s=>`
+      <tr>
+        <td class="mono" style="font-size:.8rem;color:var(--accent)">${s.code}</td>
+        <td>${s.plan||'—'}</td>
+        <td class="mono" style="font-size:.8rem;color:var(--muted)">${s.user_id}</td>
+        <td>${fmt_ts(s.created_at)}</td>
+        <td><span class="badge ${s.status==='active'?'badge-green':'badge-red'}">${s.status||'—'}</span></td>
+      </tr>`).join('');
+  } catch(e){ toast('Failed to load sales','error'); }
+}
+
+// ─── BOOT ────────────────────────────────────
+loadStats();
+</script>
+</body>
+</html>
