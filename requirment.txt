@@ -1,0 +1,21 @@
+# Web framework
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+
+# Telegram Bot
+aiogram==3.7.0
+
+# Razorpay payments
+razorpay==1.4.1
+
+# Firebase Admin SDK
+firebase-admin==6.5.0
+
+# Background scheduler (retention engine)
+APScheduler==3.10.4
+
+# HTTP client (used internally by aiogram)
+aiohttp==3.9.5
+
+# Required by APScheduler
+tzlocal==5.2
