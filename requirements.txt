@@ -1,21 +1,11 @@
-# Web framework
 fastapi==0.111.0
 uvicorn[standard]==0.30.1
-
-# Telegram Bot
+pydantic==2.7.4
+pydantic-core==2.18.4
 aiogram==3.7.0
-
-# Razorpay payments
 razorpay==1.4.1
-
-# Firebase Admin SDK
 firebase-admin==6.5.0
-
-# Background scheduler (retention engine)
 APScheduler==3.10.4
-
-# HTTP client (used internally by aiogram)
 aiohttp==3.9.5
-
-# Required by APScheduler
+httpx==0.27.0
 tzlocal==5.2
